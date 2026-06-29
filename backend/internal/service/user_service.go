@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/resend/resend-go/v3"
@@ -359,12 +360,19 @@ func (s *serviceStruct) SendEmail(ctx context.Context, email string, userID int,
 	}
 
 	_, err = s.mail.Emails.SendWithContext(ctx, params)
-	serviceLogger.InfoContext(ctx, "click here bud", "email", verifyURL)
-
 	if err != nil {
 		serviceLogger.ErrorContext(ctx, "failed to send email", "email", email, "error", err)
 		return err
 	}
+
+	u, err := url.Parse(verifyURL)
+	if err != nil {
+		panic(err)
+	}
+	u.Host = "localhost:8080"
+	u.Path = "/api/v1/auth/verify-email"
+	serviceLogger.InfoContext(ctx, "click here bud", "email", u.String())
+
 	return nil
 }
 
