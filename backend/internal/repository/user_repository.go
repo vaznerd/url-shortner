@@ -487,6 +487,10 @@ func (r *Repository) CacheShortURL(ctx context.Context, shortCode string, longUR
 	return r.rdb.Set(ctx, shortCode, longURL, 0).Err()
 }
 
+func (r *Repository) DeleteCachedShortURL(ctx context.Context, shortCode string) error {
+	return r.rdb.Del(ctx, shortCode).Err()
+}
+
 func (r *Repository) GetURLByShortCode(ctx context.Context, shortCode string) (domain.URL, error) {
 	start := time.Now()
 	const query = `
@@ -623,6 +627,11 @@ func (r *Repository) DeleteURLByShortCode(ctx context.Context, shortCode string)
 	}
 
 	defer rows.Close()
+
+	if cacheErr := r.DeleteCachedShortURL(ctx, shortCode); cacheErr != nil {
+		r.log.WarnContext(ctx, "failed to delete cached short URL", slog.String("short_code", shortCode), slog.Any("error", cacheErr))
+	}
+
 	r.logSlowQueries(ctx, "DeleteURLByShortCode", start)
 	return nil
 }
